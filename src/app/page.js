@@ -3,36 +3,30 @@
 import { useState, useEffect } from 'react';
 import pages from './pages.css'
 import axios from 'axios';
-// const io = require('socket.io-client');
-// const socket = io('http://localhost:4000', {
-//     withCredentials: true,
-//     extraHeaders: {
-//         // 'sportsbook': 'header-content',
-//         'x-current-user': "me",
-//     },
-// });
+
 const api = axios.create({
-  baseURL: "http://localhost:4000/api/",
+  baseURL: "https://c12d42895ebb-15633984065905290001.ngrok-free.app/api/",
   headers:
     { "Content-Type": 'application/json' }
 
 })
 
-const webSocket = new WebSocket('ws://localhost:4040/');
+
 export default function Home() {
   const [csvData, setCsvData] = useState([]);
-  const [selApp, setSelApp] = useState('');
   const [messages, setMessages] = useState([]);
-  const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRow, setSelectedRow] = useState([]);
   const [customInfo, setCustomInfo] = useState({ name: '', phone: '', money: '' });
-  const [conversation, setConversation] = useState([]);
-  webSocket.onmessage = (event) => {
-    console.log(event.data);
-    setMessages([...messages, JSON.parse(event.data)])
 
-  };
-  // socket.on('message',(data) => console.log('socket data_____________', data))
-  // Function to read CSV file and parse it
+  const webSocket = new WebSocket('wss://c12d42895ebb-15633984065905290001.ngrok-free.app/');
+  webSocket.addEventListener("open", (event) => {
+    console.log("Hello Server!");
+    webSocket.onmessage = (event) => {
+      console.log('Event => ', event);
+      setMessages([...messages, JSON.parse(event.data)])
+    };
+  });
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -49,7 +43,7 @@ export default function Home() {
   // Function to send selected row data to backend
   const handleRowClick = async (rowData) => {
     fetchConversation(rowData);
-    setSelApp(rowData[1]);
+    // setSelApp(rowData[1]);
     setCustomInfo({
       name: rowData[0],
       phone: rowData[1],
@@ -57,7 +51,7 @@ export default function Home() {
     });
 
     try {
-      const response = await fetch('http://localhost:4000/api/row-data', {
+      const response = await fetch('https://c12d42895ebb-15633984065905290001.ngrok-free.app/api/row-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +81,7 @@ export default function Home() {
       money: customInfo.money
     }
     try {
-      const respond = await fetch('http://localhost:4000/api/send-sms', {
+      const respond = await fetch('https://c12d42895ebb-15633984065905290001.ngrok-free.app/api/send-sms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -108,9 +102,11 @@ export default function Home() {
   };
 
   const fetchConversation = async (rowData) => {
-
     api.get(`/messages?whatsapp=${rowData[1]}`)
-      .then(res => setMessages(res.data))
+      .then(res => {
+        console.log('response messages=> ', res);
+        setMessages(res.data);
+      })
   };
 
   const TextAera = ({ text, type }) => {
